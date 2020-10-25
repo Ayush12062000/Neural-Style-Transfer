@@ -89,10 +89,10 @@ c_layer = 'block5_conv2'
 # intermediate models
 c_model = Model(
     inputs = model.input, 
-    outputs = model.get_layer(content_layer).output
+    outputs = model.get_layer(c_layer).output
 )
 
-s_models = [Model(inputs = model.input, outputs = model.get_layer(layer).output) for layer in style_layers]
+s_models = [Model(inputs = model.input, outputs = model.get_layer(layer).output) for layer in s_layers]
 
 # Content Cost
 def content_cost(content, generated):
