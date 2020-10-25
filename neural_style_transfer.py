@@ -78,26 +78,26 @@ img = load_and_process_image('IMG_20200528_122818_725.jpg')
 display_image(img)
 
 #content and style models
-style_layers = [
+s_layers = [
     'block1_conv1', 
     'block3_conv1', 
     'block5_conv1'
 ]
 
-content_layer = 'block5_conv2'
+c_layer = 'block5_conv2'
 
 # intermediate models
-content_model = Model(
+c_model = Model(
     inputs = model.input, 
     outputs = model.get_layer(content_layer).output
 )
 
-style_models = [Model(inputs = model.input, outputs = model.get_layer(layer).output) for layer in style_layers]
+s_models = [Model(inputs = model.input, outputs = model.get_layer(layer).output) for layer in style_layers]
 
 # Content Cost
 def content_cost(content, generated):
-    a_C = content_model(content)
-    a_G = content_model(generated)
+    a_C = c_model(content)
+    a_G = c_model(generated)
     cost = tf.reduce_mean(tf.square(a_C - a_G))
     return cost
 
@@ -109,30 +109,30 @@ def gram_matrix(A):
     return gram / tf.cast(n, tf.float32)
 
 #Style cost
-lam = 1. / len(style_models)
+l = 1. / len(style_models)
 
 def style_cost(style, generated):
-    J_style = 0
+    s = 0
     
-    for style_model in style_models:
+    for style_model in s_models:
         a_S = style_model(style)
         a_G = style_model(generated)
         GS = gram_matrix(a_S)
         GG = gram_matrix(a_G)
         current_cost = tf.reduce_mean(tf.square(GS - GG))
-        J_style += current_cost * lam
+        s += current_cost * l
     
-    return J_style
+    return s
 
 #Training
 import time
 
 generated_images = []
 
-def training_loop(content_path, style_path, iterations = 200, a = 15., b = 25.):
+def training_loop(content_img_path, style_img_path, iterations = 200, a = 15., b = 25.):
     # initialise
-    content = load_and_process_image(content_path)
-    style = load_and_process_image(style_path)
+    content = load_and_process_image(content_img_path)
+    style = load_and_process_image(style_img_path)
     generated = tf.Variable(content, dtype = tf.float32)
     
     opt = tf.optimizers.Adam(learning_rate = 7.)
@@ -145,20 +145,20 @@ def training_loop(content_path, style_path, iterations = 200, a = 15., b = 25.):
     for i in range(iterations):
         
         with tf.GradientTape() as tape:
-            J_content = content_cost(content, generated)
-            J_style = style_cost(style, generated)
-            J_total = a * J_content + b * J_style
+            c = content_cost(content, generated)
+            s = style_cost(style, generated)
+            total = a * c + b * s
         
-        grads = tape.gradient(J_total, generated)
+        grads = tape.gradient(total, generated)
         opt.apply_gradients([(grads, generated)])
         
-        if J_total < best_cost:
-            best_cost = J_total
+        if total < best_cost:
+            best_cost = total
             best_image = generated.numpy()
         
         if i % int(iterations/10) == 0:
             time_taken = time.time() - start_time
-            print('Cost at {}: {}. Time elapsed: {}'.format(i, J_total, time_taken))
+            print('Cost at {}: {}. Time elapsed: {}'.format(i, total, time_taken))
             generated_images.append(generated.numpy())
         
     return best_image
