@@ -101,9 +101,9 @@ def content_cost(content, generated):
     cost = tf.reduce_mean(tf.square(a_C - a_G))
     return cost
 
-def gram_matrix(A):
-    channels = int(A.shape[-1])
-    a = tf.reshape(A, [-1, channels])
+def gram_matrix(X):
+    channels = int(X.shape[-1])
+    a = tf.reshape(X, [-1, channels])
     n = tf.shape(a)[0]
     gram = tf.matmul(a, a, transpose_a = True)
     return gram / tf.cast(n, tf.float32)
